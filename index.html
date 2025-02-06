@@ -14,8 +14,9 @@
         label {
             display: block;
             margin-bottom: 5px;
+            margin-top: 10px;
         }
-        input {
+        input, select {
             width: 100%;
             padding: 8px;
             margin-bottom: 10px;
@@ -29,12 +30,10 @@
             border: none;
             cursor: pointer;
             width: 100%;
+            margin-top: 20px;
         }
         button:hover {
             background-color: #45a049;
-        }
-        h2 {
-            margin-top: 20px;
         }
         .result {
             margin-top: 20px;
@@ -42,13 +41,30 @@
             background-color: #f9f9f9;
             border: 1px solid #ddd;
         }
+        .result h2 {
+            margin-top: 0;
+        }
     </style>
 </head>
 <body>
-
 <h1>币安合约仓位计算器</h1>
 
 <form id="calculator-form">
+    <label for="position_mode">仓位模式:</label>
+    <select id="position_mode">
+        <option value="full">全仓</option>
+        <option value="half">半仓</option>
+    </select>
+
+    <label for="stop_loss_percent">止损比例:</label>
+    <select id="stop_loss_percent">
+        <option value="25">25%</option>
+        <option value="20">20%</option>
+        <option value="15">15%</option>
+        <option value="10">10%</option>
+        <option value="5">5%</option>
+    </select>
+
     <label for="entry_price">开仓价格:</label>
     <input type="number" id="entry_price" required step="0.01">
 
@@ -65,69 +81,76 @@
 
 <script>
 function calculatePosition() {
-    // 获取用户输入的值
+    // 获取输入值
     const entryPrice = parseFloat(document.getElementById("entry_price").value);
     const stopLoss = parseFloat(document.getElementById("stop_loss").value);
     const totalCapital = parseFloat(document.getElementById("total_capital").value);
+    const positionMode = document.getElementById("position_mode").value;
+    const stopLossPercent = parseFloat(document.getElementById("stop_loss_percent").value);
 
     // 输入验证
-    if (entryPrice <= 0 || stopLoss <= 0 || totalCapital <= 0) {
+    if ([entryPrice, stopLoss, totalCapital].some(v => v <= 0)) {
         alert("所有输入值都必须大于0");
         return;
     }
-
     if (entryPrice === stopLoss) {
         alert("开仓价格不能等于止损价格");
         return;
     }
 
+    // 计算可用资金
+    let availableCapital = totalCapital;
+    if (positionMode === "half") availableCapital = totalCapital * 0.5;
+
     // 计算价格变动百分比
     const priceChangePercent = Math.abs((entryPrice - stopLoss) / entryPrice * 100);
-    
-    // 止损金额（总资金的25%）
-    const maxLoss = totalCapital * 0.25;
-    
-    // 计算最大仓位价值
+
+    // 计算最大止损金额（使用 totalCapital 来保证一致性）
+    const maxLoss = totalCapital * (stopLossPercent / 100);
+
+    // 计算仓位价值
     const positionValue = (maxLoss / priceChangePercent) * 100;
-    
-    // 计算基础杠杆倍数
-    let baseLeverage = positionValue / totalCapital;
 
-    // 将基础杠杆调整到币安允许的范围内（1-75倍）
-    let suggestedLeverage;
-    if (baseLeverage < 1) {
-        suggestedLeverage = 1;
-    } else if (baseLeverage > 75) {
-        suggestedLeverage = 75;
-    } else {
-        suggestedLeverage = Math.round(baseLeverage);
-    }
+    // 计算基础杠杆
+    let baseLeverage = positionValue / availableCapital;
 
-    // 计算建议保证金金额
+    // 调整杠杆倍数（1-75）
+    let suggestedLeverage = baseLeverage < 1 ? 1 : 
+                           baseLeverage > 75 ? 75 : 
+                           Math.round(baseLeverage);
+
+    // 计算建议保证金
     let suggestedMargin = positionValue / suggestedLeverage;
-    suggestedMargin = Math.round(suggestedMargin * 100) / 100; // 保留两位小数
+    suggestedMargin = Math.round(suggestedMargin * 100) / 100;
 
-    // 如果建议保证金超过总资金，进行调整
-    if (suggestedMargin > totalCapital) {
-        suggestedMargin = totalCapital;
+    // 保证金上限检查
+    if (suggestedMargin > availableCapital) {
+        suggestedMargin = availableCapital;
         suggestedLeverage = Math.min(75, Math.round(positionValue / suggestedMargin));
     }
 
     // 计算实际仓位价值
     const actualPositionValue = suggestedMargin * suggestedLeverage;
 
-    // 显示计算结果
+    // 计算实际止损金额
+    const actualLoss = actualPositionValue * (Math.abs(entryPrice - stopLoss) / entryPrice);
+    const actualLossPercent = (actualLoss / totalCapital * 100).toFixed(2);
+
+    // 显示结果
     const resultDiv = document.getElementById("result");
-    resultDiv.innerHTML = `
-        <h2>计算结果</h2>
-        <p>价格变动比例: ${priceChangePercent.toFixed(2)}%</p>
-        <p>最大止损金额: ${maxLoss.toFixed(2)}</p>
+    resultDiv.innerHTML = 
+        `<h2>计算结果</h2>
+        <p>仓位模式: ${positionMode === "full" ? "全仓" : "半仓"}</p>
+        <p>可用资金: ${availableCapital.toFixed(2)}</p>
+        <p>设置止损比例: ${stopLossPercent}%</p>
+        <p>价格波动幅度: ${priceChangePercent.toFixed(2)}%</p>
         <p>建议杠杆倍数: ${suggestedLeverage}x</p>
-        <p>建议保证金金额: ${suggestedMargin.toFixed(2)}</p>
+        <p>建议保证金: ${suggestedMargin.toFixed(2)}</p>
         <p>实际仓位价值: ${actualPositionValue.toFixed(2)}</p>
-        <p>实际止损金额: ${(actualPositionValue * (Math.abs(entryPrice - stopLoss) / entryPrice)).toFixed(2)} (${((actualPositionValue * (Math.abs(entryPrice - stopLoss) / entryPrice)) / totalCapital * 100).toFixed(2)}% 总资金)</p>
-    `;
+        <p>预计止损金额: ${actualLoss.toFixed(2)} (${actualLossPercent}% 总资金)</p>
+        <p style="color: red;">风险提示: 实际交易中请考虑滑点和手续费影响</p>`;
 }
+
 </script>
 
 </body>
