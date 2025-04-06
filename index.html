@@ -116,7 +116,7 @@ function calculatePosition() {
 
     // 调整杠杆倍数（1-75）
     let suggestedLeverage = baseLeverage < 1 ? 1 : 
-                           baseLeverage > 75 ? 75 : 
+                           baseLeverage > 125 ? 125: 
                            Math.round(baseLeverage);
 
     // 计算建议保证金
