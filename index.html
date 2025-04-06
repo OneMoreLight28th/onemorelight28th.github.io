@@ -48,7 +48,6 @@
 </head>
 <body>
 <h1>币安合约仓位计算器</h1>
-
 <form id="calculator-form">
     <label for="position_mode">仓位模式:</label>
     <select id="position_mode">
@@ -114,10 +113,10 @@ function calculatePosition() {
     // 计算基础杠杆
     let baseLeverage = positionValue / availableCapital;
 
-    // 调整杠杆倍数（1-75）
-    let suggestedLeverage = baseLeverage < 1 ? 1 : 
-                           baseLeverage > 125 ? 125: 
-                           Math.round(baseLeverage);
+    // 调整杠杆倍数（1-125）
+    let suggestedLeverage = baseLeverage < 1 ? 1 :
+                            baseLeverage > 125 ? 125 :
+                            Math.round(baseLeverage);
 
     // 计算建议保证金
     let suggestedMargin = positionValue / suggestedLeverage;
@@ -126,7 +125,7 @@ function calculatePosition() {
     // 保证金上限检查
     if (suggestedMargin > availableCapital) {
         suggestedMargin = availableCapital;
-        suggestedLeverage = Math.min(75, Math.round(positionValue / suggestedMargin));
+        suggestedLeverage = Math.min(125, Math.round(positionValue / suggestedMargin));
     }
 
     // 计算实际仓位价值
@@ -138,19 +137,18 @@ function calculatePosition() {
 
     // 显示结果
     const resultDiv = document.getElementById("result");
-    resultDiv.innerHTML = 
+    resultDiv.innerHTML =
         `<h2>计算结果</h2>
-        <p>仓位模式: ${positionMode === "full" ? "全仓" : "半仓"}</p>
-        <p>可用资金: ${availableCapital.toFixed(2)}</p>
-        <p>设置止损比例: ${stopLossPercent}%</p>
-        <p>价格波动幅度: ${priceChangePercent.toFixed(2)}%</p>
-        <p>建议杠杆倍数: ${suggestedLeverage}x</p>
-        <p>建议保证金: ${suggestedMargin.toFixed(2)}</p>
-        <p>实际仓位价值: ${actualPositionValue.toFixed(2)}</p>
-        <p>预计止损金额: ${actualLoss.toFixed(2)} (${actualLossPercent}% 总资金)</p>
-        <p style="color: red;">风险提示: 实际交易中请考虑滑点和手续费影响</p>`;
+         <p>仓位模式: ${positionMode === "full" ? "全仓" : "半仓"}</p>
+         <p>可用资金: ${availableCapital.toFixed(2)}</p>
+         <p>设置止损比例: ${stopLossPercent}%</p>
+         <p>价格波动幅度: ${priceChangePercent.toFixed(2)}%</p>
+         <p>建议杠杆倍数: ${suggestedLeverage}x</p>
+         <p>建议保证金: ${suggestedMargin.toFixed(2)}</p>
+         <p>实际仓位价值: ${actualPositionValue.toFixed(2)}</p>
+         <p>预计止损金额: ${actualLoss.toFixed(2)} (${actualLossPercent}% 总资金)</p>
+         <p style="color: red;">风险提示: 实际交易中请考虑滑点和手续费影响</p>`;
 }
-
 </script>
 
 </body>
