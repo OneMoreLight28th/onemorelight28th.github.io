@@ -1,192 +1,72 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>币安合约仓位计算器</title>
+    <title>手写体展示</title>
     <style>
+        /* 定义自定义字体 */
+        @font-face {
+            font-family: 'MyHandwritingFont'; /* 给字体起一个名字 */
+            /*
+             * TODO: 请将 'path/to/your-handwriting-font.woff2' 和 'path/to/your-handwriting-font.woff'
+             * 替换为您找到的相似手写体字体文件的实际URL或路径。
+             * 您需要找到一个免费的、可用于网页的中文字体文件 (.woff或.woff2格式)。
+             * 如果您有多种格式的字体文件，可以添加更多 src 行以提高兼容性。
+             */
+            src: url('path/to/your-handwriting-font.woff2') format('woff2'),
+                 url('path/to/your-handwriting-font.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
+            font-family: 'MyHandwritingFont', cursive, sans-serif; /* 应用自定义字体，并提供通用字体作为备用 */
+            line-height: 1.8; /* 调整行高以提高可读性 */
+            margin: 0; /* 移除默认外边距 */
+            padding: 20px; /* 添加页面内边距 */
+            background-color: #e0f7fa; /* 设置一个柔和的背景颜色 */
+            color: #333; /* 设置文字颜色 */
+            font-size: 18px; /* 设置基础字体大小 */
+            display: flex; /* 使用flexbox布局居中内容 */
+            justify-content: center; /* 水平居中 */
+            align-items: center; /* 垂直居中 */
+            min-height: 100vh; /* 确保body至少占满整个视口高度 */
+            box-sizing: border-box; /* 使padding包含在元素的总宽度和高度内 */
         }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            margin-top: 10px;
+
+        .container {
+            width: 100%; /* 容器宽度占满父容器 */
+            max-width: 600px; /* 限制内容最大宽度 */
+            padding: 30px; /* 增加内边距 */
+            background-color: #ffffff; /* 内容背景颜色 */
+            border-radius: 12px; /* 增加圆角 */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* 调整阴影效果 */
+            text-align: left; /* 文字左对齐 */
+            white-space: pre-wrap; /* 保留文本中的换行符和空格 */
+            word-wrap: break-word; /* 允许长单词换行 */
         }
-        input, select {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            box-sizing: border-box;
+
+        p {
+            margin: 0; /* 移除段落默认外边距 */
+            padding: 0; /* 移除段落默认内边距 */
         }
-        button {
-            padding: 10px 15px;
-            font-size: 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .result {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-        }
-        .result h2 {
-            margin-top: 0;
-        }
+
     </style>
 </head>
 <body>
-<h1>币安合约仓位计算器</h1>
-<form id="calculator-form">
-    <label for="position_mode">仓位模式:</label>
-    <select id="position_mode">
-        <option value="full">全仓</option>
-        <option value="half">半仓</option>
-    </select>
 
-    <label for="stop_loss_percent">止损比例:</label>
-    <select id="stop_loss_percent">
-        <option value="25">25%</option>
-        <option value="20">20%</option>
-        <option value="15">15%</option>
-        <option value="10">10%</option>
-        <option value="5">5%</option>
-    </select>
+    <div class="container">
+        <p>
+To: 薇
+不希望你总是累累的
+希望你好好的吃饭
+开开心心
+坏情绪都远离你
 
-    <label for="entry_price">开仓价格:</label>
-    <input type="number" id="entry_price" required step="0.01">
-
-    <label for="stop_loss">止损价格:</label>
-    <input type="number" id="stop_loss" required step="0.01">
-
-    <label for="total_capital">总资金:</label>
-    <input type="number" id="total_capital" required step="0.01">
-
-    <!-- 新增币种选择 -->
-    <label for="currency">币种选择:</label>
-    <select id="currency">
-        <option value="USDT">USDT</option>
-        <option value="USDC">USDC</option>
-    </select>
-
-    <!-- 新增订单类型选择 -->
-    <label for="order_type">订单类型 (Maker/Taker):</label>
-    <select id="order_type">
-        <option value="maker">Maker</option>
-        <option value="taker">Taker</option>
-    </select>
-
-    <button type="button" onclick="calculatePosition()">计算</button>
-</form>
-
-<div class="result" id="result"></div>
-
-<script>
-function calculatePosition() {
-    // 获取输入值
-    const entryPrice = parseFloat(document.getElementById("entry_price").value);
-    const stopLoss = parseFloat(document.getElementById("stop_loss").value);
-    const totalCapital = parseFloat(document.getElementById("total_capital").value);
-    const positionMode = document.getElementById("position_mode").value;
-    const stopLossPercent = parseFloat(document.getElementById("stop_loss_percent").value);
-    const currency = document.getElementById("currency").value;
-    const orderType = document.getElementById("order_type").value;
-
-    // 输入验证
-    if ([entryPrice, stopLoss, totalCapital].some(v => v <= 0)) {
-        alert("所有输入值都必须大于0");
-        return;
-    }
-    if (entryPrice === stopLoss) {
-        alert("开仓价格不能等于止损价格");
-        return;
-    }
-
-    // 计算可用资金
-    let availableCapital = totalCapital;
-    if (positionMode === "half") availableCapital = totalCapital * 0.5;
-
-    // 计算价格变动百分比
-    const priceChangePercent = Math.abs((entryPrice - stopLoss) / entryPrice * 100);
-
-    // 计算最大止损金额（使用 totalCapital 来保证一致性）
-    const maxLoss = totalCapital * (stopLossPercent / 100);
-
-    // 计算仓位价值
-    const positionValue = (maxLoss / priceChangePercent) * 100;
-
-    // 计算基础杠杆
-    let baseLeverage = positionValue / availableCapital;
-
-    // 调整杠杆倍数（1-125）
-    let suggestedLeverage = baseLeverage < 1 ? 1 :
-                            baseLeverage > 125 ? 125 :
-                            Math.round(baseLeverage);
-
-    // 计算建议保证金
-    let suggestedMargin = positionValue / suggestedLeverage;
-    suggestedMargin = Math.round(suggestedMargin * 100) / 100;
-
-    // 保证金上限检查
-    if (suggestedMargin > availableCapital) {
-        suggestedMargin = availableCapital;
-        suggestedLeverage = Math.min(125, Math.round(positionValue / suggestedMargin));
-    }
-
-    // 计算实际仓位价值
-    const actualPositionValue = suggestedMargin * suggestedLeverage;
-
-    // 计算实际止损金额（不含手续费），基于仓位价值与开仓、止损价格差异
-    const actualLoss = actualPositionValue * (Math.abs(entryPrice - stopLoss) / entryPrice);
-
-    // 根据币种和订单类型选择手续费率
-    let feeRate = 0;
-    if (currency === "USDT") {
-        // USDT：Maker 0.0200%，Taker 0.0500%
-        feeRate = (orderType === "maker") ? 0.0002 : 0.0005;
-    } else if (currency === "USDC") {
-        // USDC：Maker 0.0000%，Taker 0.0400%
-        feeRate = (orderType === "maker") ? 0 : 0.0004;
-    }
-
-    // 计算开仓和平仓的手续费总和
-    const feeCost = actualPositionValue * feeRate * 2;
-
-    // 总止损金额为预估亏损加上手续费支出
-    const totalLoss = actualLoss + feeCost;
-    const totalLossPercent = (totalLoss / totalCapital * 100).toFixed(2);
-
-    // 显示结果
-    const resultDiv = document.getElementById("result");
-    resultDiv.innerHTML =
-        `<h2>计算结果</h2>
-         <p>仓位模式: ${positionMode === "full" ? "全仓" : "半仓"}</p>
-         <p>币种: ${currency}</p>
-         <p>订单类型: ${orderType.charAt(0).toUpperCase() + orderType.slice(1)}</p>
-         <p>可用资金: ${availableCapital.toFixed(2)}</p>
-         <p>设置止损比例: ${stopLossPercent}%</p>
-         <p>价格波动幅度: ${priceChangePercent.toFixed(2)}%</p>
-         <p>建议杠杆倍数: ${suggestedLeverage}x</p>
-         <p>建议保证金: ${suggestedMargin.toFixed(2)}</p>
-         <p>实际仓位价值: ${actualPositionValue.toFixed(2)}</p>
-         <p>预计止损金额（不含手续费）: ${actualLoss.toFixed(2)}</p>
-         <p>手续费率: ${(feeRate * 100).toFixed(4)}%</p>
-         <p>手续费（开仓和平仓）: ${feeCost.toFixed(2)}</p>
-         <p>总预计止损金额（含手续费）: ${totalLoss.toFixed(2)} (${totalLossPercent}% 总资金)</p>
-         <p style="color: red;">风险提示: 实际交易中请考虑滑点和手续费的影响</p>`;
-}
-</script>
+爱你的 慈
+        </p>
+    </div>
 
 </body>
 </html>
